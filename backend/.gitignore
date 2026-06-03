@@ -1,0 +1,17 @@
+## Build outputs
+**/bin/
+**/obj/
+
+## EF migrations backup
+*.Designer.cs
+
+## User secrets
+**/appsettings.Development.json
+
+## VS/Rider
+.vs/
+.idea/
+*.user
+
+## dotnet tools
+.config/
