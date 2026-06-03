@@ -9,37 +9,32 @@ Log.Logger = new LoggerConfiguration()
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Serilog
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .WriteTo.Console()
     .ReadFrom.Configuration(context.Configuration));
 
-// Layers
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// API
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-// CORS
 builder.Services.AddCors(options =>
-    options.AddPolicy("AllowAngular", policy =>
-        policy.WithOrigins("http://localhost:4200")
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins(
+            "http://localhost:4200",
+            "https://zealous-sea-0b48d2a03.7.azurestaticapps.net")
               .AllowAnyHeader()
               .AllowAnyMethod()));
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
+// Enable Scalar in all environments for portfolio demo
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.UseSerilogRequestLogging();
-app.UseCors("AllowAngular");
-app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
 app.UseAuthorization();
 app.MapControllers();
 
