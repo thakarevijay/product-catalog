@@ -18,6 +18,7 @@ public static class DependencyInjection
 
         services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
         return services;

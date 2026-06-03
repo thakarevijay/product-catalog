@@ -11,6 +11,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatCardModule } from '@angular/material/card';
 import { ProductService } from '../../../../core/services/product.service';
+import { CategoryService } from '../../../../core/services/category.service';
+import { Category } from '../../../../core/models/product.model';
 
 @Component({
   selector: 'app-product-form',
@@ -100,9 +102,9 @@ import { ProductService } from '../../../../core/services/product.service';
                 <mat-form-field appearance="outline">
                   <mat-label>Category</mat-label>
                   <mat-select formControlName="categoryId">
-                    <mat-option [value]="1">Bags</mat-option>
-                    <mat-option [value]="2">Leather Goods</mat-option>
-                    <mat-option [value]="3">Accessories</mat-option>
+                    @for (category of categories(); track category.id) {
+                      <mat-option [value]="category.id">{{ category.name }}</mat-option>
+                    }
                   </mat-select>
                   @if (form.get('categoryId')?.hasError('required') && form.get('categoryId')?.touched) {
                     <mat-error>Category is required</mat-error>
@@ -154,6 +156,7 @@ import { ProductService } from '../../../../core/services/product.service';
 export class ProductFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly productService = inject(ProductService);
+  private readonly categoryService = inject(CategoryService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
@@ -161,6 +164,7 @@ export class ProductFormComponent implements OnInit {
   isEditMode = signal(false);
   loading = signal(false);
   saving = signal(false);
+  categories = signal<Category[]>([]);
   productId: number | null = null;
 
   form = this.fb.group({
@@ -174,12 +178,21 @@ export class ProductFormComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.loadCategories();
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode.set(true);
       this.productId = +id;
       this.loadProduct(+id);
     }
+  }
+
+  loadCategories(): void {
+    this.categoryService.getCategories().subscribe({
+      next: (cats) => this.categories.set(cats),
+      error: (err) => this.snackBar.open('Failed to load categories', 'Close', { duration: 3000 })
+    });
   }
 
   loadProduct(id: number): void {
@@ -192,7 +205,6 @@ export class ProductFormComponent implements OnInit {
           description: product.description,
           price: product.price,
           stockQuantity: product.stockQuantity,
-          categoryId: null, // categories loaded statically for now
           status: product.status
         });
         this.loading.set(false);
