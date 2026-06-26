@@ -1,3 +1,4 @@
+using Azure.Identity;
 using HealthChecks.UI.Client;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -11,6 +12,16 @@ Log.Logger = new LoggerConfiguration()
     .CreateBootstrapLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Key Vault configuration in production
+var keyVaultUrl = builder.Configuration["KeyVault:Url"];
+if (!string.IsNullOrEmpty(keyVaultUrl))
+{
+    builder.Configuration.AddAzureKeyVault(
+        new Uri(keyVaultUrl),
+        new DefaultAzureCredential()); // uses Managed Identity in Azure
+                                       // uses your az login locally
+}
 
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .WriteTo.Console()
