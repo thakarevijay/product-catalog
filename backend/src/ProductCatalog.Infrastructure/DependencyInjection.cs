@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ProductCatalog.Application.Common.Interfaces;
 using ProductCatalog.Infrastructure.Persistence;
 using ProductCatalog.Infrastructure.Repositories;
+using ProductCatalog.Infrastructure.Services;
 
 public static class DependencyInjection
 {
@@ -20,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IBlobStorageService, BlobStorageService>();
 
         return services;
     }

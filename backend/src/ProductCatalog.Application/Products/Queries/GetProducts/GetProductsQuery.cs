@@ -15,4 +15,5 @@ public record ProductDto(
     int StockQuantity,
     string Status,
     string CategoryName,
+    string? ImageUrl,
     DateTime CreatedAt);

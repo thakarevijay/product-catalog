@@ -2,9 +2,11 @@ namespace ProductCatalog.Api.Controllers;
 
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using ProductCatalog.Application.Common.Interfaces;
 using ProductCatalog.Application.Products.Commands.CreateProduct;
 using ProductCatalog.Application.Products.Commands.DeleteProduct;
 using ProductCatalog.Application.Products.Commands.UpdateProduct;
+using ProductCatalog.Application.Products.Commands.UpdateProductImage;
 using ProductCatalog.Application.Products.Queries.GetProductById;
 using ProductCatalog.Application.Products.Queries.GetProducts;
 using ProductCatalog.Domain.Enums;
@@ -14,10 +16,12 @@ using ProductCatalog.Domain.Enums;
 public class ProductsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IBlobStorageService _blobStorage;
 
-    public ProductsController(IMediator mediator)
+    public ProductsController(IMediator mediator, IBlobStorageService blobStorage)
     {
         _mediator = mediator;
+        _blobStorage = blobStorage;
     }
 
     [HttpGet]
@@ -61,6 +65,46 @@ public class ProductsController : ControllerBase
     {
         await _mediator.Send(new DeleteProductCommand(id), cancellationToken);
         return NoContent();
+    }
+
+    [HttpPost("{id:int}/image")]
+    public async Task<IActionResult> UploadImage(int id, IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file provided");
+
+        // Validate file type
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
+        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+            return BadRequest("Only JPEG, PNG and WebP images are allowed");
+
+        // Validate file size — max 5MB
+        if (file.Length > 5 * 1024 * 1024)
+            return BadRequest("File size must be less than 5MB");
+
+        // Get product
+        var product = await _mediator.Send(new GetProductByIdQuery(id), cancellationToken);
+        if (product is null) return NotFound();
+
+        // Upload to Blob Storage
+        using var stream = file.OpenReadStream();
+        var imageUrl = await _blobStorage.UploadImageAsync(
+            stream,
+            file.FileName,
+            file.ContentType,
+            cancellationToken);
+
+        // Update product with image URL
+        var command = new UpdateProductCommand(
+            id, product.Name, product.SKU, product.Description,
+            product.Price, product.StockQuantity,
+            Enum.Parse<ProductStatus>(product.Status),
+            0); // categoryId not needed for image update
+
+        // Save image URL directly via repository
+        await _mediator.Send(new UpdateProductImageCommand(id, imageUrl), cancellationToken);
+
+        return Ok(new { imageUrl });
     }
 }
 

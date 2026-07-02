@@ -11,6 +11,7 @@ public class Product : BaseEntity
     public decimal Price { get; set; }
     public int StockQuantity { get; set; }
     public ProductStatus Status { get; set; } = ProductStatus.Active;
+    public string? ImageUrl { get; set; }
     public int CategoryId { get; set; }
     public Category Category { get; set; } = null!;
 }

@@ -19,9 +19,16 @@ public class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, Paginat
         var totalCount = await _repository.GetTotalCountAsync(request.Search, cancellationToken);
 
         var items = products.Select(p => new ProductDto(
-            p.Id, p.Name, p.SKU, p.Description,
-            p.Price, p.StockQuantity, p.Status.ToString(),
-            p.Category.Name, p.CreatedAt));
+            p.Id,
+            p.Name,
+            p.SKU,
+            p.Description,
+            p.Price,
+            p.StockQuantity,
+            p.Status.ToString(),
+            p.Category.Name,
+            p.ImageUrl,
+            p.CreatedAt));
 
         return new PaginatedResult<ProductDto>
         {
