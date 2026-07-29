@@ -16,9 +16,7 @@ export class ProductService {
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
 
-    if (search) {
-      params = params.set('search', search);
-    }
+    if (search) params = params.set('search', search);
 
     return this.http.get<PaginatedResult<Product>>(this.baseUrl, { params });
   }
@@ -37,5 +35,11 @@ export class ProductService {
 
   deleteProduct(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  uploadImage(id: number, file: File): Observable<{ imageUrl: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ imageUrl: string }>(`${this.baseUrl}/${id}/image`, formData);
   }
 }

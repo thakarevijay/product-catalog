@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,10 +8,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -22,20 +20,10 @@ import { Product } from '../../../../core/models/product.model';
   selector: 'app-product-list',
   standalone: true,
   imports: [
-    CommonModule,
-    FormsModule,
-    RouterModule,
-    MatTableModule,
-    MatPaginatorModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatButtonModule,
-    MatIconModule,
-    MatChipsModule,
-    MatProgressSpinnerModule,
-    MatSnackBarModule,
-    MatDialogModule,
-    MatTooltipModule
+    CommonModule, FormsModule, RouterModule,
+    MatTableModule, MatPaginatorModule, MatInputModule,
+    MatFormFieldModule, MatButtonModule, MatIconModule,
+    MatProgressSpinnerModule, MatSnackBarModule, MatTooltipModule
   ],
   template: `
     <div class="container">
@@ -47,7 +35,6 @@ import { Product } from '../../../../core/models/product.model';
         </button>
       </div>
 
-      <!-- Search -->
       <mat-form-field appearance="outline" class="search-field">
         <mat-label>Search products</mat-label>
         <input matInput [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange($event)"
@@ -55,16 +42,25 @@ import { Product } from '../../../../core/models/product.model';
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
 
-      <!-- Loading -->
       @if (loading()) {
-        <div class="loading">
-          <mat-spinner diameter="40"></mat-spinner>
-        </div>
+        <div class="loading"><mat-spinner diameter="40"></mat-spinner></div>
       }
 
-      <!-- Table -->
       @if (!loading()) {
         <table mat-table [dataSource]="products()" class="mat-elevation-z2">
+
+          <ng-container matColumnDef="image">
+            <th mat-header-cell *matHeaderCellDef>Image</th>
+            <td mat-cell *matCellDef="let product">
+              @if (product.imageUrl) {
+                <img [src]="product.imageUrl" [alt]="product.name" class="product-image">
+              } @else {
+                <div class="no-image">
+                  <mat-icon>image_not_supported</mat-icon>
+                </div>
+              }
+            </td>
+          </ng-container>
 
           <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef>Name</th>
@@ -73,9 +69,7 @@ import { Product } from '../../../../core/models/product.model';
 
           <ng-container matColumnDef="sku">
             <th mat-header-cell *matHeaderCellDef>SKU</th>
-            <td mat-cell *matCellDef="let product">
-              <code>{{ product.sku }}</code>
-            </td>
+            <td mat-cell *matCellDef="let product"><code>{{ product.sku }}</code></td>
           </ng-container>
 
           <ng-container matColumnDef="category">
@@ -124,7 +118,6 @@ import { Product } from '../../../../core/models/product.model';
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-
           <tr class="mat-row" *matNoDataRow>
             <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
               No products found
@@ -158,6 +151,8 @@ import { Product } from '../../../../core/models/product.model';
     .status-discontinued { background: #fce4ec; color: #c62828; }
     .no-data { text-align: center; padding: 48px; color: #9e9e9e; }
     th.mat-header-cell { font-weight: 600; color: #424242; }
+    .product-image { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+    .no-image { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 4px; color: #9e9e9e; }
   `]
 })
 export class ProductListComponent implements OnInit {
@@ -165,12 +160,10 @@ export class ProductListComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly searchSubject = new Subject<string>();
 
-  displayedColumns = ['name', 'sku', 'category', 'price', 'stock', 'status', 'actions'];
-
+  displayedColumns = ['image', 'name', 'sku', 'category', 'price', 'stock', 'status', 'actions'];
   products = signal<Product[]>([]);
   totalCount = signal(0);
   loading = signal(false);
-
   searchTerm = '';
   currentPage = 1;
   pageSize = 10;

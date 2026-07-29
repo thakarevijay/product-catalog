@@ -18,17 +18,10 @@ import { Category } from '../../../../core/models/product.model';
   selector: 'app-product-form',
   standalone: true,
   imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatSelectModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    MatSnackBarModule,
-    MatCardModule
+    CommonModule, ReactiveFormsModule, RouterModule,
+    MatFormFieldModule, MatInputModule, MatButtonModule,
+    MatSelectModule, MatIconModule, MatProgressSpinnerModule,
+    MatSnackBarModule, MatCardModule
   ],
   template: `
     <div class="container">
@@ -40,9 +33,7 @@ import { Category } from '../../../../core/models/product.model';
       </div>
 
       @if (loading()) {
-        <div class="loading">
-          <mat-spinner diameter="40"></mat-spinner>
-        </div>
+        <div class="loading"><mat-spinner diameter="40"></mat-spinner></div>
       }
 
       @if (!loading()) {
@@ -57,9 +48,6 @@ import { Category } from '../../../../core/models/product.model';
                   @if (form.get('name')?.hasError('required') && form.get('name')?.touched) {
                     <mat-error>Name is required</mat-error>
                   }
-                  @if (form.get('name')?.hasError('maxlength')) {
-                    <mat-error>Name must not exceed 200 characters</mat-error>
-                  }
                 </mat-form-field>
 
                 <mat-form-field appearance="outline">
@@ -73,17 +61,13 @@ import { Category } from '../../../../core/models/product.model';
 
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Description</mat-label>
-                <textarea matInput formControlName="description" rows="3"
-                          placeholder="Optional product description"></textarea>
+                <textarea matInput formControlName="description" rows="3"></textarea>
               </mat-form-field>
 
               <div class="form-row">
                 <mat-form-field appearance="outline">
                   <mat-label>Price (€)</mat-label>
-                  <input matInput type="number" formControlName="price" placeholder="0.00">
-                  @if (form.get('price')?.hasError('required') && form.get('price')?.touched) {
-                    <mat-error>Price is required</mat-error>
-                  }
+                  <input matInput type="number" formControlName="price">
                   @if (form.get('price')?.hasError('min')) {
                     <mat-error>Price must be greater than 0</mat-error>
                   }
@@ -91,10 +75,7 @@ import { Category } from '../../../../core/models/product.model';
 
                 <mat-form-field appearance="outline">
                   <mat-label>Stock Quantity</mat-label>
-                  <input matInput type="number" formControlName="stockQuantity" placeholder="0">
-                  @if (form.get('stockQuantity')?.hasError('min')) {
-                    <mat-error>Stock cannot be negative</mat-error>
-                  }
+                  <input matInput type="number" formControlName="stockQuantity">
                 </mat-form-field>
               </div>
 
@@ -122,6 +103,43 @@ import { Category } from '../../../../core/models/product.model';
                   </mat-form-field>
                 }
               </div>
+
+              <!-- Image Upload — only in edit mode -->
+              @if (isEditMode()) {
+                <div class="image-section">
+                  <h3>Product Image</h3>
+
+                  @if (currentImageUrl()) {
+                    <div class="current-image">
+                      <img [src]="currentImageUrl()" alt="Current product image">
+                      <p>Current image</p>
+                    </div>
+                  }
+
+                  <div class="image-upload">
+                    <input #fileInput type="file"
+                           accept="image/jpeg,image/png,image/webp"
+                           style="display:none"
+                           (change)="onFileSelected($event)">
+                    <button mat-stroked-button type="button" (click)="fileInput.click()">
+                      <mat-icon>upload</mat-icon>
+                      {{ selectedFile() ? selectedFile()!.name : 'Choose Image' }}
+                    </button>
+
+                    @if (selectedFile()) {
+                      <button mat-raised-button color="accent" type="button"
+                              (click)="uploadImage()" [disabled]="uploadingImage()">
+                        @if (uploadingImage()) {
+                          <mat-spinner diameter="20"></mat-spinner>
+                        } @else {
+                          Upload Image
+                        }
+                      </button>
+                    }
+                  </div>
+                  <p class="image-hint">JPEG, PNG or WebP. Max 5MB.</p>
+                </div>
+              }
 
               <div class="form-actions">
                 <button mat-button type="button" routerLink="/products">Cancel</button>
@@ -151,6 +169,12 @@ import { Category } from '../../../../core/models/product.model';
     mat-form-field { width: 100%; }
     .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; }
     mat-card { padding: 8px; }
+    .image-section { margin: 16px 0; padding: 16px; border: 1px solid #e0e0e0; border-radius: 8px; }
+    .image-section h3 { margin: 0 0 12px 0; font-size: 16px; }
+    .current-image img { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
+    .current-image p { margin: 0 0 12px 0; color: #666; font-size: 12px; }
+    .image-upload { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .image-hint { margin: 8px 0 0 0; color: #9e9e9e; font-size: 12px; }
   `]
 })
 export class ProductFormComponent implements OnInit {
@@ -165,6 +189,9 @@ export class ProductFormComponent implements OnInit {
   loading = signal(false);
   saving = signal(false);
   categories = signal<Category[]>([]);
+  currentImageUrl = signal<string | null>(null);
+  selectedFile = signal<File | null>(null);
+  uploadingImage = signal(false);
   productId: number | null = null;
 
   form = this.fb.group({
@@ -179,7 +206,6 @@ export class ProductFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCategories();
-
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode.set(true);
@@ -191,7 +217,7 @@ export class ProductFormComponent implements OnInit {
   loadCategories(): void {
     this.categoryService.getCategories().subscribe({
       next: (cats) => this.categories.set(cats),
-      error: (err) => this.snackBar.open('Failed to load categories', 'Close', { duration: 3000 })
+      error: () => this.snackBar.open('Failed to load categories', 'Close', { duration: 3000 })
     });
   }
 
@@ -207,6 +233,7 @@ export class ProductFormComponent implements OnInit {
           stockQuantity: product.stockQuantity,
           status: product.status
         });
+        if (product.imageUrl) this.currentImageUrl.set(product.imageUrl);
         this.loading.set(false);
       },
       error: (err) => {
@@ -216,9 +243,32 @@ export class ProductFormComponent implements OnInit {
     });
   }
 
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      this.selectedFile.set(input.files[0]);
+    }
+  }
+
+  uploadImage(): void {
+    if (!this.selectedFile() || !this.productId) return;
+    this.uploadingImage.set(true);
+    this.productService.uploadImage(this.productId, this.selectedFile()!).subscribe({
+      next: (result) => {
+        this.currentImageUrl.set(result.imageUrl);
+        this.selectedFile.set(null);
+        this.snackBar.open('Image uploaded successfully', 'Close', { duration: 3000 });
+        this.uploadingImage.set(false);
+      },
+      error: (err) => {
+        this.snackBar.open(err.message || 'Image upload failed', 'Close', { duration: 3000 });
+        this.uploadingImage.set(false);
+      }
+    });
+  }
+
   onSubmit(): void {
     if (this.form.invalid) return;
-
     this.saving.set(true);
     const value = this.form.value;
 
