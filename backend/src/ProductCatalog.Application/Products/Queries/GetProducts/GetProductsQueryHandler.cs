@@ -26,6 +26,7 @@ public class GetProductsQueryHandler : IRequestHandler<GetProductsQuery, Paginat
             p.Price,
             p.StockQuantity,
             p.Status.ToString(),
+            p.CategoryId,
             p.Category.Name,
             p.ImageUrl,
             p.CreatedAt));

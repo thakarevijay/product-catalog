@@ -14,6 +14,7 @@ public record ProductDto(
     decimal Price,
     int StockQuantity,
     string Status,
+    int CategoryId,
     string CategoryName,
     string? ImageUrl,
     DateTime CreatedAt);

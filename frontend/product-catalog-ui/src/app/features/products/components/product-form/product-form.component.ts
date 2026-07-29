@@ -231,7 +231,8 @@ export class ProductFormComponent implements OnInit {
           description: product.description,
           price: product.price,
           stockQuantity: product.stockQuantity,
-          status: product.status
+          status: product.status,
+          categoryId: product.categoryId
         });
         if (product.imageUrl) this.currentImageUrl.set(product.imageUrl);
         this.loading.set(false);

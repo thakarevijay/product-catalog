@@ -26,6 +26,7 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, P
             product.Price,
             product.StockQuantity,
             product.Status.ToString(),
+            product.CategoryId,
             product.Category.Name,
             product.ImageUrl,
             product.CreatedAt);
