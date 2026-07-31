@@ -52,9 +52,13 @@ public class ProductsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateProductRequest request, CancellationToken cancellationToken)
     {
+        // Parse status string to enum
+        if (!Enum.TryParse<ProductStatus>(request.Status, out var status))
+            return BadRequest($"Invalid status value: {request.Status}");
+
         var command = new UpdateProductCommand(
             id, request.Name, request.SKU, request.Description,
-            request.Price, request.StockQuantity, request.Status, request.CategoryId);
+            request.Price, request.StockQuantity, status, request.CategoryId);
 
         await _mediator.Send(command, cancellationToken);
         return NoContent();
@@ -73,35 +77,20 @@ public class ProductsController : ControllerBase
         if (file == null || file.Length == 0)
             return BadRequest("No file provided");
 
-        // Validate file type
         var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
         if (!allowedTypes.Contains(file.ContentType.ToLower()))
             return BadRequest("Only JPEG, PNG and WebP images are allowed");
 
-        // Validate file size — max 5MB
         if (file.Length > 5 * 1024 * 1024)
             return BadRequest("File size must be less than 5MB");
 
-        // Get product
         var product = await _mediator.Send(new GetProductByIdQuery(id), cancellationToken);
         if (product is null) return NotFound();
 
-        // Upload to Blob Storage
         using var stream = file.OpenReadStream();
         var imageUrl = await _blobStorage.UploadImageAsync(
-            stream,
-            file.FileName,
-            file.ContentType,
-            cancellationToken);
+            stream, file.FileName, file.ContentType, cancellationToken);
 
-        // Update product with image URL
-        var command = new UpdateProductCommand(
-            id, product.Name, product.SKU, product.Description,
-            product.Price, product.StockQuantity,
-            Enum.Parse<ProductStatus>(product.Status),
-            0); // categoryId not needed for image update
-
-        // Save image URL directly via repository
         await _mediator.Send(new UpdateProductImageCommand(id, imageUrl), cancellationToken);
 
         return Ok(new { imageUrl });
@@ -114,5 +103,5 @@ public record UpdateProductRequest(
     string? Description,
     decimal Price,
     int StockQuantity,
-    ProductStatus Status,
+    string Status,
     int CategoryId);
