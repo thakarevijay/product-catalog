@@ -124,6 +124,14 @@ public class ProductRepository : IProductRepository
         return Task.CompletedTask;
     }
 
+    public async Task UpdateImageUrlAsync(int id, string imageUrl, CancellationToken cancellationToken = default)
+    {
+        using var connection = await _connectionFactory.CreateConnectionAsync();
+        await connection.ExecuteAsync(
+            "UPDATE Products SET ImageUrl = @ImageUrl, UpdatedAt = @UpdatedAt WHERE Id = @Id",
+            new { ImageUrl = imageUrl, UpdatedAt = DateTime.UtcNow, Id = id });
+    }
+
     public async Task<bool> ExistsBySkuAsync(string sku, int? excludeId = null, CancellationToken cancellationToken = default)
     {
         using var connection = await _connectionFactory.CreateConnectionAsync();
@@ -139,3 +147,6 @@ public class ProductRepository : IProductRepository
         return count > 0;
     }
 }
+
+    // Direct Dapper update for image URL
+    // avoids EF Core tracking issues with Dapper-loaded entities

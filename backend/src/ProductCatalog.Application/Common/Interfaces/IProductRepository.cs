@@ -9,6 +9,7 @@ public interface IProductRepository
     Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<Product> AddAsync(Product product, CancellationToken cancellationToken = default);
     Task UpdateAsync(Product product, CancellationToken cancellationToken = default);
+    Task UpdateImageUrlAsync(int id, string imageUrl, CancellationToken cancellationToken = default);
     Task DeleteAsync(Product product, CancellationToken cancellationToken = default);
     Task<bool> ExistsBySkuAsync(string sku, int? excludeId = null, CancellationToken cancellationToken = default);
 }
