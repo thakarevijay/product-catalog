@@ -127,9 +127,12 @@ public class ProductRepository : IProductRepository
     public async Task UpdateImageUrlAsync(int id, string imageUrl, CancellationToken cancellationToken = default)
     {
         using var connection = await _connectionFactory.CreateConnectionAsync();
-        await connection.ExecuteAsync(
+        var rowsAffected = await connection.ExecuteAsync(
             "UPDATE Products SET ImageUrl = @ImageUrl, UpdatedAt = @UpdatedAt WHERE Id = @Id",
             new { ImageUrl = imageUrl, UpdatedAt = DateTime.UtcNow, Id = id });
+        
+        if (rowsAffected == 0)
+            throw new KeyNotFoundException($"Product {id} not found or image URL not updated");
     }
 
     public async Task<bool> ExistsBySkuAsync(string sku, int? excludeId = null, CancellationToken cancellationToken = default)
